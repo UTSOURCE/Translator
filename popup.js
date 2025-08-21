@@ -12,8 +12,12 @@ const swapBtn = document.getElementById("swapBtn");
 const copyBtn = document.getElementById("copyBtn");
 const speakBtn = document.getElementById("speakBtn");
 const autoToggle = document.getElementById("autoToggle");
+const selectionToggle = document.getElementById("selectionToggle");
+const autoToggleStatus = document.getElementById("autoToggleStatus");
+const selectionToggleStatus = document.getElementById("selectionToggleStatus");
 const manualPageBtn = document.getElementById("manualPageBtn");
 const restorePageBtn = document.getElementById("restorePageBtn");
+const feedbackBtn = document.getElementById("feedbackBtn");
 
 
 const downloadSection = document.getElementById("downloadSection");
@@ -21,6 +25,14 @@ function updateCharCount() {
   if (!charCountEl) return;
   const len = inputEl.value.length;
   charCountEl.textContent = `字数：${len}`;
+
+  // Update character count styling based on length
+  charCountEl.className = 'char-count';
+  if (len > 1000) {
+    charCountEl.classList.add('danger');
+  } else if (len > 500) {
+    charCountEl.classList.add('warning');
+  }
 }
 
 inputEl.addEventListener("input", updateCharCount);
@@ -132,6 +144,14 @@ function populateLangSelects() {
 function setStatus(msg, cls = "") {
   statusEl.textContent = msg;
   statusEl.className = `hint small ${cls}`.trim();
+}
+
+// 更新开关状态文本
+function updateToggleStatus(toggleElement, statusElement, enabled) {
+  if (statusElement) {
+    statusElement.textContent = enabled ? '已开启' : '已关闭';
+    statusElement.style.color = enabled ? '#10b981' : '#6b7280';
+  }
 }
 
 // Unified check for unsupported/invalid language pair errors across Chrome versions
@@ -284,6 +304,7 @@ async function doTranslate() {
   }
 
   translateBtn.disabled = true;
+  translateBtn.classList.add('loading');
   setCopyEnabled(false);
   setStatus("正在准备翻译...", "");
 
@@ -447,6 +468,7 @@ async function doTranslate() {
     downloadPct.textContent = "0%";
 
     translateBtn.disabled = false;
+    translateBtn.classList.remove('loading');
   }
 }
 
@@ -468,8 +490,18 @@ swapBtn?.addEventListener("click", () => {
 // 初始化：加载设置并同步 UI
 (async () => {
   try {
-    const s = await chrome.storage.sync.get(['autoTranslateEnabled', 'autoTranslateTargetLang']);
-    if (autoToggle) autoToggle.checked = !!s.autoTranslateEnabled;
+    const s = await chrome.storage.sync.get(['autoTranslateEnabled', 'selectionTranslateEnabled', 'autoTranslateTargetLang']);
+    const autoEnabled = !!s.autoTranslateEnabled;
+    const selectionEnabled = !!s.selectionTranslateEnabled;
+
+    if (autoToggle) {
+      autoToggle.checked = autoEnabled;
+      updateToggleStatus(autoToggle, autoToggleStatus, autoEnabled);
+    }
+    if (selectionToggle) {
+      selectionToggle.checked = selectionEnabled;
+      updateToggleStatus(selectionToggle, selectionToggleStatus, selectionEnabled);
+    }
     if (s.autoTranslateTargetLang) targetSelect.value = s.autoTranslateTargetLang;
   } catch {}
 
@@ -487,7 +519,30 @@ swapBtn?.addEventListener("click", () => {
 autoToggle?.addEventListener('change', async (e) => {
   const enabled = !!e.target.checked;
   await chrome.storage.sync.set({ autoTranslateEnabled: enabled, autoTranslateTargetLang: targetSelect.value });
+  updateToggleStatus(autoToggle, autoToggleStatus, enabled);
   setStatus(enabled ? '已开启：自动翻译网页' : '已关闭：自动翻译网页', enabled ? 'ok' : '');
+});
+
+// 选中翻译开关：持久化并通知content script
+selectionToggle?.addEventListener('change', async (e) => {
+  const enabled = !!e.target.checked;
+  await chrome.storage.sync.set({ selectionTranslateEnabled: enabled });
+  updateToggleStatus(selectionToggle, selectionToggleStatus, enabled);
+  setStatus(enabled ? '已开启：选中文本翻译' : '已关闭：选中文本翻译', enabled ? 'ok' : '');
+
+  // 通知当前标签页的content script更新选中翻译状态
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab?.id) {
+      await chrome.tabs.sendMessage(tab.id, {
+        type: 'TOGGLE_SELECTION_TRANSLATION',
+        enabled: enabled
+      });
+    }
+  } catch (e) {
+    // 忽略错误（可能是页面不支持或其他原因）
+    console.warn('Failed to notify content script about selection translation toggle:', e);
+  }
 });
 
 // 手动：翻译当前网页
@@ -539,6 +594,13 @@ targetSelect?.addEventListener('change', async () => {
   } catch (e) {
     // 忽略错误（可能是页面不支持或其他原因）
   }
+});
+
+// 反馈按钮：打开GitHub Issues页面
+feedbackBtn?.addEventListener('click', () => {
+  const feedbackUrl = 'https://github.com/AnYi-0/Translator/issues/';
+  chrome.tabs.create({ url: feedbackUrl });
+  setStatus('已打开反馈页面，感谢您的反馈！', 'ok');
 });
 
 // Optional: update availability hint when selects change

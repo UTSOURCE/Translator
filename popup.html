@@ -25,7 +25,27 @@
       select, textarea, button, progress { width: 100%; }
       select, textarea { border: 1px solid var(--border); border-radius: 10px; background: #fff; padding: 10px 12px; font-size: 13px; color: var(--text); transition: border-color .15s ease, box-shadow .15s ease; }
       select:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--ring); }
-      textarea { min-height: 120px; margin: 8px 0 10px; line-height: 1.45; }
+
+      /* Enhanced textarea styles */
+      textarea {
+        min-height: 120px;
+        margin: 8px 0 10px;
+        line-height: 1.45;
+        resize: vertical;
+        background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
+        border: 2px solid var(--border);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02), inset 0 1px 2px rgba(0,0,0,0.03);
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      }
+      textarea:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px var(--ring), 0 4px 12px rgba(74, 144, 226, 0.1);
+        background: #ffffff;
+      }
+      textarea:hover:not(:focus) {
+        border-color: #c1c9d2;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      }
 
       .row { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; margin: 8px 0; }
       .swap-cell { display: flex; align-items: end; justify-content: center; }
@@ -34,13 +54,79 @@
       .swap-btn svg { width: 18px; height: 18px; }
 
       .btn { appearance: none; border: 1px solid transparent; border-radius: 10px; padding: 10px 14px; font-size: 13px; cursor: pointer; transition: transform .02s ease, box-shadow .15s ease, background .15s ease; }
-      .btn.primary { background: linear-gradient(180deg, #6fb2ff, var(--primary)); color: #fff; box-shadow: 0 1px 1px rgba(16,24,40,0.06); }
-      .btn.primary:hover { background: linear-gradient(180deg, #5aa6ff, var(--primary-600)); }
+
+      /* Enhanced primary button styles */
+      .btn.primary {
+        background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+        color: #fff;
+        box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3), 0 2px 4px rgba(0,0,0,0.1);
+        border: none;
+        font-weight: 500;
+        letter-spacing: 0.3px;
+        position: relative;
+        overflow: hidden;
+      }
+      .btn.primary::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        transition: left 0.5s ease;
+      }
+      .btn.primary:hover::before {
+        left: 100%;
+      }
+      .btn.primary:hover {
+        background: linear-gradient(135deg, #5aa6ff 0%, #4a90e2 100%);
+        box-shadow: 0 6px 20px rgba(74, 144, 226, 0.4), 0 4px 8px rgba(0,0,0,0.15);
+        transform: translateY(-1px);
+      }
       .btn:active { transform: translateY(1px); }
       .btn:disabled { opacity: .6; cursor: not-allowed; }
 
+      /* Enhanced secondary button styles */
+      .btn:not(.primary):hover {
+        background: #f1f5f9 !important;
+        border-color: #cbd5e1 !important;
+        color: #475569 !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+      .btn:not(.primary):active {
+        background: #e2e8f0 !important;
+        transform: translateY(1px);
+      }
+
       .hint { font-size: 11px; color: var(--muted); margin-top: 8px; }
-      .out { min-height: 110px; white-space: pre-wrap; border: 1px solid var(--border); padding: 12px; border-radius: 10px; background: #fbfdff; }
+
+      /* Enhanced output area styles */
+      .out {
+        min-height: 110px;
+        white-space: pre-wrap;
+        border: 2px solid var(--border);
+        padding: 16px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #f8fafe 0%, #ffffff 100%);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04), inset 0 1px 3px rgba(74, 144, 226, 0.05);
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        line-height: 1.5;
+        color: var(--text);
+        position: relative;
+        transition: all 0.2s ease;
+      }
+      .out:empty::before {
+        content: "翻译结果将显示在这里...";
+        color: var(--muted);
+        font-style: italic;
+        opacity: 0.7;
+      }
+      .out:not(:empty) {
+        border-color: #e1f0ff;
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafe 100%);
+        box-shadow: 0 4px 12px rgba(74, 144, 226, 0.08), inset 0 1px 3px rgba(74, 144, 226, 0.1);
+      }
       .small { font-size: 11px; }
       .ok { color: #10b981; }
       .warn { color: #f59e0b; }
@@ -52,6 +138,125 @@
       progress::-webkit-progress-bar { background: #eef2f7; border-radius: 20px; }
       progress::-webkit-progress-value { background: linear-gradient(90deg, #7db3ff, #4a90e2); border-radius: 20px; }
       progress::-moz-progress-bar { background: linear-gradient(90deg, #7db3ff, #4a90e2); }
+
+      /* Toggle switch styles */
+      .toggle-switch input:checked + .toggle-slider {
+        background: linear-gradient(135deg, #10b981, #059669);
+        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+      }
+      .toggle-switch input:checked + .toggle-slider:before {
+        transform: translateX(20px);
+        background: #ffffff;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+      }
+      .toggle-slider {
+        background: #d1d5db;
+        transition: all 0.3s ease;
+      }
+      .toggle-slider:before {
+        position: absolute;
+        content: "";
+        height: 18px;
+        width: 18px;
+        left: 3px;
+        top: 3px;
+        background: white;
+        border-radius: 50%;
+        transition: all 0.3s ease;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+      }
+      .toggle-switch:hover .toggle-slider {
+        background: #9ca3af;
+      }
+      .toggle-switch input:checked:hover + .toggle-slider {
+        background: linear-gradient(135deg, #059669, #047857);
+        box-shadow: 0 3px 12px rgba(16, 185, 129, 0.4);
+      }
+
+      /* Add subtle animation when toggling */
+      .toggle-switch input:checked + .toggle-slider:after {
+        content: "✓";
+        position: absolute;
+        left: 6px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: white;
+        font-size: 10px;
+        font-weight: bold;
+        opacity: 0.8;
+      }
+
+      /* Switches section styles */
+      .switches-section {
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
+      }
+      .switch-item {
+        padding: 6px 0;
+        border-bottom: 1px solid rgba(226,232,240,0.5);
+      }
+      .switch-item:last-child { border-bottom: none; }
+      .switch-item label {
+        font-weight: 500;
+        transition: color 0.2s ease;
+      }
+      .switch-item:hover label { color: var(--primary); }
+
+      /* Section title styling */
+      .section-title {
+        font-weight: 600;
+        color: #334155;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .section-title::before {
+        content: "⚙️";
+        font-size: 14px;
+      }
+
+      /* Character count styling */
+      .char-count {
+        padding: 2px 8px;
+        background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+        border-radius: 12px;
+        border: 1px solid #cbd5e1;
+        font-size: 10px;
+        font-weight: 500;
+        transition: all 0.2s ease;
+      }
+      .char-count.warning {
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        border-color: #f59e0b;
+        color: #92400e;
+      }
+      .char-count.danger {
+        background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+        border-color: #ef4444;
+        color: #dc2626;
+      }
+
+      /* Loading animation for translate button */
+      .btn.loading {
+        position: relative;
+        color: transparent !important;
+      }
+      .btn.loading::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 16px;
+        height: 16px;
+        margin: -8px 0 0 -8px;
+        border: 2px solid rgba(255,255,255,0.3);
+        border-top-color: #fff;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
     </style>
   </head>
   <body>
@@ -79,22 +284,45 @@
         </div>
       </div>
 
-      <div style="display:flex;align-items:center;justify-content:space-between;">
-        <label for="inputText">文本</label>
-        <span id="charCount" class="small" aria-live="polite">字数：0</span>
-      </div>
-      <textarea id="inputText" placeholder="输入需要翻译的文本..."></textarea>
-
-      <div style="display:flex; gap:8px; align-items:center;">
-        <button id="translateBtn" class="btn primary" style="flex:1;">开始翻译</button>
-        <div style="display:flex;align-items:center;gap:6px; white-space:nowrap;">
-          <label class="small" style="display:flex;align-items:center;gap:6px;">
-            <input id="autoToggle" type="checkbox" /> 自动翻译网页
+      <!-- 输入区域 -->
+      <div style="margin-top:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <label for="inputText" style="display:flex;align-items:center;gap:6px;font-weight:500;color:var(--text);">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--primary);">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14,2 14,8 20,8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10,9 9,9 8,9"></polyline>
+            </svg>
+            输入文本
           </label>
-          <button id="manualPageBtn" class="btn" style="width:auto;">翻译当前网页</button>
-          <button id="restorePageBtn" class="btn" style="width:auto;">恢复原状</button>
+          <span id="charCount" class="char-count" aria-live="polite">字数：0</span>
+        </div>
+        <div style="position:relative;">
+          <textarea id="inputText" placeholder="请输入需要翻译的文本..."></textarea>
+          <div style="position:absolute;bottom:12px;right:12px;opacity:0.3;pointer-events:none;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
+              <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
+              <path d="M2 2l7.586 7.586"></path>
+              <circle cx="11" cy="11" r="2"></circle>
+            </svg>
+          </div>
         </div>
       </div>
+
+      <button id="translateBtn" class="btn primary" style="margin-top:12px;display:flex;align-items:center;justify-content:center;gap:8px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 8l6 6"></path>
+          <path d="M4 14l6-6 2-3"></path>
+          <path d="M2 5h12"></path>
+          <path d="M7 2h1"></path>
+          <path d="M22 22l-5-10-5 10"></path>
+          <path d="M14 18h6"></path>
+        </svg>
+        开始翻译
+      </button>
 
       <div class="hint small" id="status"></div>
 
@@ -104,14 +332,91 @@
         <div class="small" id="downloadPct">0%</div>
       </div>
 
-      <div class="small" style="display:flex;align-items:center;justify-content:space-between;margin-top:12px;margin-bottom:6px;">
-        <h2 class="small" style="margin:0;">翻译结果</h2>
-        <div style="display:flex;gap:8px;">
-          <button id="speakBtn" class="btn" style="width:auto;padding:6px 10px;" title="朗读翻译结果" aria-label="朗读翻译结果">朗读</button>
-          <button id="copyBtn" class="btn" style="width:auto;padding:6px 10px;" title="复制翻译结果" aria-label="复制翻译结果">复制</button>
+      <!-- 输出区域 -->
+      <div style="margin-top:20px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <label style="display:flex;align-items:center;gap:6px;font-weight:500;color:var(--text);">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#10b981;">
+              <polyline points="22,12 18,12 15,21 9,3 6,12 2,12"></polyline>
+            </svg>
+            翻译结果
+          </label>
+          <div style="display:flex;gap:6px;">
+            <button id="speakBtn" class="btn" style="width:auto;padding:6px 10px;font-size:11px;background:#f8fafc;border:1px solid #e2e8f0;color:#64748b;display:flex;align-items:center;gap:4px;" title="朗读翻译结果" aria-label="朗读翻译结果">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+              </svg>
+              朗读
+            </button>
+            <button id="copyBtn" class="btn" style="width:auto;padding:6px 10px;font-size:11px;background:#f8fafc;border:1px solid #e2e8f0;color:#64748b;display:flex;align-items:center;gap:4px;" title="复制翻译结果" aria-label="复制翻译结果">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              复制
+            </button>
+          </div>
+        </div>
+        <div id="output" class="out"></div>
+      </div>
+
+      <!-- 功能开关区域 -->
+      <div class="switches-section" style="margin-top:16px;padding:14px;border:1px solid var(--border);border-radius:10px;">
+        <div class="small section-title" style="margin-bottom:12px;">功能设置</div>
+
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <!-- 自动翻译网页开关 -->
+          <div class="switch-item" style="display:flex;align-items:center;justify-content:space-between;">
+            <div style="display:flex;flex-direction:column;">
+              <label class="small" style="color:var(--text);cursor:pointer;font-weight:500;" for="autoToggle">
+                自动翻译网页
+              </label>
+              <span id="autoToggleStatus" class="small" style="color:var(--muted);font-size:10px;margin-top:2px;">已关闭</span>
+            </div>
+            <label class="toggle-switch" style="position:relative;display:inline-block;width:44px;height:24px;">
+              <input id="autoToggle" type="checkbox" style="opacity:0;width:0;height:0;">
+              <span class="toggle-slider" style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;border-radius:24px;transition:0.3s;"></span>
+            </label>
+          </div>
+
+          <!-- 选中翻译开关 -->
+          <div class="switch-item" style="display:flex;align-items:center;justify-content:space-between;">
+            <div style="display:flex;flex-direction:column;">
+              <label class="small" style="color:var(--text);cursor:pointer;font-weight:500;" for="selectionToggle">
+                选中文本翻译
+              </label>
+              <span id="selectionToggleStatus" class="small" style="color:var(--muted);font-size:10px;margin-top:2px;">已关闭</span>
+            </div>
+            <label class="toggle-switch" style="position:relative;display:inline-block;width:44px;height:24px;">
+              <input id="selectionToggle" type="checkbox" style="opacity:0;width:0;height:0;">
+              <span class="toggle-slider" style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;border-radius:24px;transition:0.3s;"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- 页面翻译按钮 -->
+        <div style="display:flex;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid rgba(226,232,240,0.5);">
+          <button id="manualPageBtn" class="btn" style="flex:1;padding:8px 12px;font-size:12px;background:#f1f5f9;border:1px solid #e2e8f0;color:#475569;">翻译当前网页</button>
+          <button id="restorePageBtn" class="btn" style="flex:1;padding:8px 12px;font-size:12px;background:#f1f5f9;border:1px solid #e2e8f0;color:#475569;">恢复原状</button>
         </div>
       </div>
-      <div id="output" class="out"></div>
+
+      <!-- 反馈区域 -->
+      <div style="margin-top:12px;padding:12px;border:1px solid var(--border);border-radius:10px;background:linear-gradient(135deg, #fefefe 0%, #f8fafc 100%);">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div style="display:flex;flex-direction:column;">
+            <span class="small" style="color:var(--text);font-weight:500;">遇到问题？</span>
+            <span class="small" style="color:var(--muted);font-size:10px;margin-top:2px;">点击反馈问题或建议</span>
+          </div>
+          <button id="feedbackBtn" class="btn" style="width:auto;padding:6px 12px;font-size:12px;background:linear-gradient(135deg, #4a90e2, #346fc7);color:#fff;border:none;display:flex;align-items:center;gap:4px;" title="反馈问题或建议">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+            反馈
+          </button>
+        </div>
+      </div>
 
       <div class="small" style="text-align:center;color:#999;margin-top:10px;">Powered by：AnYi</div>
 

@@ -24,6 +24,7 @@
   let isTranslatingSelection = false;
   let lastTranslatedText = null; // Track last translated text to avoid duplicates
   let isInitialized = false; // Prevent multiple initializations
+  let selectionTranslateEnabled = false; // Control whether selection translation is enabled
 
   // Simple inline overlay for status/progress
   let overlayEl = null;
@@ -566,6 +567,12 @@
   async function handleTextSelection() {
     const timestamp = Date.now();
 
+    // Check if selection translation is enabled
+    if (!selectionTranslateEnabled) {
+      hideTranslationTooltip();
+      return;
+    }
+
     if (isTranslatingSelection) {
       console.log(`[${timestamp}] Translation already in progress, skipping...`);
       return;
@@ -696,7 +703,7 @@
   }
 
   // Initialize selection translation
-  function initSelectionTranslation() {
+  async function initSelectionTranslation() {
     // Prevent multiple initializations
     if (isInitialized) {
       console.log('Selection translation already initialized, skipping...');
@@ -709,7 +716,17 @@
       return;
     }
 
-    console.info('Translator API available. Selection translation enabled.');
+    // Load selection translation setting from storage
+    try {
+      const result = await chrome.storage.sync.get(['selectionTranslateEnabled']);
+      selectionTranslateEnabled = !!result.selectionTranslateEnabled;
+      console.info(`Selection translation ${selectionTranslateEnabled ? 'enabled' : 'disabled'} from storage.`);
+    } catch (e) {
+      console.warn('Failed to load selection translation setting, defaulting to disabled:', e);
+      selectionTranslateEnabled = false;
+    }
+
+    console.info('Translator API available. Selection translation initialized.');
 
     // Listen for selection changes
     document.addEventListener('selectionchange', onSelectionChange);
@@ -801,8 +818,17 @@
           return;
         }
         if (msg && msg.type === 'TOGGLE_SELECTION_TRANSLATION') {
-          // This could be used to enable/disable selection translation
-          sendResponse({ ok: true });
+          const enabled = !!msg.enabled;
+          selectionTranslateEnabled = enabled;
+          console.log(`Selection translation ${enabled ? 'enabled' : 'disabled'} via message.`);
+
+          // If disabled, hide any existing tooltip
+          if (!enabled) {
+            hideTranslationTooltip();
+            lastTranslatedText = null;
+          }
+
+          sendResponse({ ok: true, selectionTranslateEnabled: enabled });
           return;
         }
       } catch (e) {
