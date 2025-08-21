@@ -340,7 +340,7 @@
   async function detectTextLanguage(text) {
     try {
       if (!isTranslatorAPIAvailable()) return null;
-      if (!text || text.trim().length < 3) return null;
+      if (!text || text.trim().length < 2) return null;
 
       const detector = await window.LanguageDetector.create({
         expectedInputLanguages: ['en','zh-Hans','zh-Hant','ja','ko','fr','de','es','ru','it','pt']
@@ -513,10 +513,10 @@
     setTimeout(hideOverlay, 1200);
 
     // Observe dynamic changes
-    setupObserver(targetLang);
+    setupObserver();
   }
 
-  function setupObserver(targetLang) {
+  function setupObserver() {
     cleanupObserver();
     observer = new MutationObserver(async (mutations) => {
       if (!enabled || !translator) return;
@@ -732,7 +732,7 @@
     document.addEventListener('selectionchange', onSelectionChange);
 
     // Hide tooltip when clicking elsewhere
-    document.addEventListener('click', (e) => {
+    document.addEventListener('click', () => {
       // Small delay to allow new selection to be processed
       setTimeout(() => {
         const selection = window.getSelection();
