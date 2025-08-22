@@ -13,7 +13,7 @@
 [![GitHub release](https://img.shields.io/github/v/release/AnYi-0/Translator?style=for-the-badge&logo=github&label=GitHub%20Release)](https://github.com/AnYi-0/Translator/releases/latest)
 
 - **[Chrome 网上应用店](https://chromewebstore.google.com/detail/hlckjpmehcjcldpaamdcegocapmelegc)** (推荐)
-- **[GitHub Releases](https://github.com/AnYi-0/Translator)** (下载 `.zip` 文件手动安装)
+- **[GitHub Releases](https://github.com/AnYi-0/Translator/releases/)** (下载 `.zip` 文件手动安装)
 
 
 ## 特性
