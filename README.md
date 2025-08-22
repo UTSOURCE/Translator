@@ -7,6 +7,15 @@
 
 一个基于 Chrome 138+ 新增的本地 Translator API 和 Language Detector API 的轻量级翻译扩展，支持自动检测网页语言、自动翻译网页、离线翻译（首次可能需下载模型）、快速出结果。
 
+## 下载地址
+
+[![Chrome 商店](https://img.shields.io/chrome-web-store/v/hlckjpmehcjcldpaamdcegocapmelegc?style=for-the-badge&logo=googlechrome&logoColor=white&label=Chrome%20商店&color=4285F4)](https://chromewebstore.google.com/detail/hlckjpmehcjcldpaamdcegocapmelegc)
+[![GitHub release](https://img.shields.io/github/v/release/AnYi-0/Translator?style=for-the-badge&logo=github&label=GitHub%20Release)](https://github.com/AnYi-0/Translator/releases/latest)
+
+- **[Chrome 网上应用店](https://chromewebstore.google.com/detail/hlckjpmehcjcldpaamdcegocapmelegc)** (推荐)
+- **[GitHub Releases](https://github.com/AnYi-0/Translator)** (下载 `.zip` 文件手动安装)
+
+
 ## 特性
 - 自动检测来源语言（LanguageDetector）
 - 目标语言可选（默认中文）
