@@ -26,6 +26,12 @@
   let isInitialized = false; // Prevent multiple initializations
   let selectionTranslateEnabled = false; // Control whether selection translation is enabled
 
+  // State for floating button
+  let floatingButton = null;
+  let floatingButtonEnabled = false;
+  let isDragging = false;
+  let dragOffset = { x: 0, y: 0 };
+
   // Simple inline overlay for status/progress
   let overlayEl = null;
   function showOverlay(msg) {
@@ -278,7 +284,33 @@
         if (!node) return NodeFilter.FILTER_REJECT;
         if (!node.parentElement) return NodeFilter.FILTER_REJECT;
         const pe = node.parentElement;
+        
+        // 排除基本标签
         if (EXCLUDED.has(pe.tagName)) return NodeFilter.FILTER_REJECT;
+        
+        // 排除漂浮翻译按钮及其子元素
+        let element = pe;
+        while (element) {
+          if (element.id === 'translator-floating-button') {
+            return NodeFilter.FILTER_REJECT;
+          }
+          element = element.parentElement;
+        }
+        
+        // 排除翻译提示框和可能的其他翻译工具元素
+        element = pe;
+        while (element) {
+          if (element.id && (
+            element.id.includes('translator') || 
+            element.id.includes('translation') ||
+            element.classList?.contains('translator-overlay') ||
+            element.classList?.contains('translation-tooltip')
+          )) {
+            return NodeFilter.FILTER_REJECT;
+          }
+          element = element.parentElement;
+        }
+        
         const txt = node.nodeValue || '';
         if (!txt.trim()) return NodeFilter.FILTER_REJECT;
         return NodeFilter.FILTER_ACCEPT;
@@ -512,6 +544,16 @@
     showOverlay('页面翻译完成');
     setTimeout(hideOverlay, 1200);
 
+    // 更新漂浮按钮状态
+    console.log('translateTextNodes: Updating floating button state, enabled now:', enabled);
+    if (floatingButton && floatingButtonEnabled) {
+      console.log('translateTextNodes: Setting button text to "恢复"');
+      floatingButton.innerHTML = '恢复';
+      floatingButton.title = '点击恢复原始网页';
+    } else {
+      console.log('translateTextNodes: Button not updated - floatingButton:', !!floatingButton, 'floatingButtonEnabled:', floatingButtonEnabled);
+    }
+
     // Observe dynamic changes
     setupObserver();
   }
@@ -550,6 +592,7 @@
   }
 
   function restorePage() {
+    console.log('restorePage: Starting page restoration, current enabled:', enabled);
     enabled = false;
     cleanupObserver();
     hideOverlay();
@@ -561,6 +604,17 @@
     originalText.clear();
     try { translator?.destroy?.(); } catch {}
     translator = null;
+    
+    // 更新漂浮按钮状态
+    console.log('restorePage: Updating floating button state, enabled now:', enabled);
+    if (floatingButton && floatingButtonEnabled) {
+      console.log('restorePage: Setting button text to "翻译"');
+      floatingButton.innerHTML = '翻译';
+      floatingButton.title = '点击翻译当前网页';
+    } else {
+      console.log('restorePage: Button not updated - floatingButton:', !!floatingButton, 'floatingButtonEnabled:', floatingButtonEnabled);
+    }
+    console.log('restorePage: Page restoration completed');
   }
 
   // Handle text selection for translation
@@ -722,7 +776,7 @@
       selectionTranslateEnabled = !!result.selectionTranslateEnabled;
       console.info(`Selection translation ${selectionTranslateEnabled ? 'enabled' : 'disabled'} from storage.`);
     } catch (e) {
-      console.warn('Failed to load selection translation setting, defaulting to disabled:', e);
+      console.warn('Failed to load selection translation setting, using defaults:', e);
       selectionTranslateEnabled = false;
     }
 
@@ -759,6 +813,46 @@
     console.log('Selection translation initialized successfully');
   }
 
+  // Initialize floating button (independent of API availability)
+  async function initFloatingButton() {
+    console.log('initFloatingButton: Starting initialization...');
+    
+    // Check if document.body is available
+    if (!document.body) {
+      console.warn('initFloatingButton: document.body not available, will retry after DOM load');
+      // Wait for body to be available
+      const observer = new MutationObserver(() => {
+        if (document.body) {
+          observer.disconnect();
+          console.log('initFloatingButton: document.body now available, retrying...');
+          initFloatingButton();
+        }
+      });
+      observer.observe(document.documentElement, { childList: true, subtree: true });
+      return;
+    }
+    
+    try {
+      console.log('initFloatingButton: Loading settings from storage...');
+      const result = await chrome.storage.sync.get(['floatingButtonEnabled']);
+      floatingButtonEnabled = !!result.floatingButtonEnabled;
+      console.info(`Floating button ${floatingButtonEnabled ? 'enabled' : 'disabled'} from storage.`);
+      
+      // Show floating button if enabled
+      if (floatingButtonEnabled) {
+        console.log('initFloatingButton: Showing floating button...');
+        showFloatingButton();
+      } else {
+        console.log('initFloatingButton: Floating button disabled, not showing');
+      }
+    } catch (e) {
+      console.warn('Failed to load floating button setting, using defaults:', e);
+      floatingButtonEnabled = false;
+    }
+    
+    console.log('initFloatingButton: Initialization completed');
+  }
+
   // Cleanup selection translation
   function cleanupSelectionTranslation() {
     document.removeEventListener('selectionchange', onSelectionChange);
@@ -775,6 +869,366 @@
     isInitialized = false;
     window.translatorGlobalLock = false; // Release global lock
     console.log('Selection translation cleaned up');
+  }
+
+  // Floating button functions
+  function createFloatingButton() {
+    console.log('createFloatingButton: Called, existing button:', !!floatingButton);
+    
+    if (floatingButton) {
+      console.log('createFloatingButton: Returning existing button');
+      return floatingButton;
+    }
+
+    console.log('createFloatingButton: Creating new button...');
+    const button = document.createElement('div');
+    button.id = 'translator-floating-button';
+    button.innerHTML = '翻译'; // 显示"翻译"文字
+    button.title = '点击翻译当前网页';
+    
+    console.log('createFloatingButton: Applying styles...');
+    // Apply styles - 长方形按钮样式
+    button.style.cssText = [
+      'position: fixed',
+      'top: 50%', // 垂直居中
+      'right: 20px', // 右侧位置
+      'transform: translateY(-50%)', // 精确垂直居中
+      'width: 60px', // 长方形宽度
+      'height: 32px', // 长方形高度
+      'background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%)',
+      'color: white',
+      'border: none',
+      'border-radius: 16px', // 圆角长方形
+      'font-size: 14px',
+      'font-weight: 500',
+      'text-align: center',
+      'line-height: 32px',
+      'cursor: move',
+      'z-index: 2147483647',
+      'box-shadow: 0 4px 16px rgba(74, 144, 226, 0.4), 0 2px 8px rgba(0,0,0,0.2)',
+      'user-select: none',
+      'backdrop-filter: blur(10px)',
+      'border: 2px solid rgba(255,255,255,0.2)',
+      'display: flex',
+      'align-items: center',
+      'justify-content: center',
+      'font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+    ].join(';');
+
+    console.log('createFloatingButton: Adding event listeners...');
+    
+    // Helper function to get current base transform (position-related)
+    function getBaseTransform() {
+      const currentTransform = button.style.transform;
+      if (currentTransform.includes('translateY(-50%)')) {
+        return 'translateY(-50%)';
+      } else {
+        return 'none';
+      }
+    }
+    
+    // Hover effects - 适配长方形按钮
+    button.addEventListener('mouseenter', () => {
+      if (!isDragging) {
+        button.style.transition = 'all 0.2s ease'; // 为悬停效果添加过渡
+        const baseTransform = getBaseTransform();
+        if (baseTransform === 'translateY(-50%)') {
+          button.style.transform = 'translateY(-50%) scale(1.05)';
+        } else {
+          button.style.transform = 'scale(1.05)';
+        }
+        button.style.background = 'linear-gradient(135deg, #5aa6ff 0%, #4a90e2 100%)';
+        button.style.boxShadow = '0 6px 24px rgba(74, 144, 226, 0.6), 0 4px 12px rgba(0,0,0,0.3)';
+      }
+    });
+
+    button.addEventListener('mouseleave', () => {
+      if (!isDragging) {
+        button.style.transition = 'all 0.2s ease'; // 为悬停效果添加过渡
+        const baseTransform = getBaseTransform();
+        if (baseTransform === 'translateY(-50%)') {
+          button.style.transform = 'translateY(-50%) scale(1)';
+        } else {
+          button.style.transform = 'scale(1)';
+        }
+        button.style.background = 'linear-gradient(135deg, #4a90e2 0%, #357abd 100%)';
+        button.style.boxShadow = '0 4px 16px rgba(74, 144, 226, 0.4), 0 2px 8px rgba(0,0,0,0.2)';
+        // 悬停效果结束后移除 transition，防止影响位置设置
+        setTimeout(() => {
+          button.style.transition = '';
+        }, 200);
+      }
+    });
+
+    // Make it draggable
+    let startX, startY, initialX, initialY;
+
+    function startDrag(e) {
+      isDragging = true;
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      
+      startX = clientX;
+      startY = clientY;
+      initialX = button.offsetLeft;
+      initialY = button.offsetTop;
+      
+      button.style.cursor = 'grabbing';
+      
+      // 保持垂直居中的同时缩小
+      const baseTransform = getBaseTransform();
+      if (baseTransform === 'translateY(-50%)') {
+        button.style.transform = 'translateY(-50%) scale(0.95)';
+      } else {
+        button.style.transform = 'scale(0.95)';
+      }
+      
+      e.preventDefault();
+    }
+
+    function drag(e) {
+      if (!isDragging) return;
+      
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      
+      const deltaX = clientX - startX;
+      const deltaY = clientY - startY;
+      
+      let newX = initialX + deltaX;
+      let newY = initialY + deltaY;
+      
+      // Constrain to viewport - 适配长方形按钮尺寸 (60x32)
+      const maxX = window.innerWidth - 60; // 按钮宽度
+      const maxY = window.innerHeight - 32; // 按钮高度
+      
+      newX = Math.max(0, Math.min(newX, maxX));
+      newY = Math.max(0, Math.min(newY, maxY));
+      
+      // 清除两个定位属性，然后设置新的位置
+      button.style.left = newX + 'px';
+      button.style.right = 'auto';
+      button.style.top = newY + 'px';
+      button.style.transform = 'none'; // 拖动时移除 translateY 变换
+      
+      e.preventDefault();
+    }
+
+    function endDrag(e) {
+      if (!isDragging) return;
+      
+      isDragging = false;
+      button.style.cursor = 'move';
+      // 检查按钮是否仍在垂直居中位置，如果不是则不使用 translateY
+      const currentTop = parseInt(button.style.top);
+      const windowHeight = window.innerHeight;
+      const buttonHeight = 32;
+      const isNearCenter = Math.abs(currentTop - (windowHeight - buttonHeight) / 2) < 50;
+      
+      if (isNearCenter) {
+        button.style.transform = 'translateY(-50%) scale(1)'; // 恢复垂直居中
+        button.style.top = '50%'; // 设置为垂直居中
+      } else {
+        button.style.transform = 'scale(1)'; // 不在中间时不使用 translateY
+      }
+      
+      // Save position to storage
+      const rect = button.getBoundingClientRect();
+      const positionData = {
+        top: rect.top,
+        useTranslateY: isNearCenter // 记录是否使用 translateY
+      };
+      
+      // 检查按钮是在右侧还是左侧，保存对应的属性
+      const windowWidth = window.innerWidth;
+      const buttonWidth = 60;
+      const isOnRight = rect.left > windowWidth / 2;
+      
+      if (isOnRight) {
+        positionData.right = windowWidth - rect.right;
+      } else {
+        positionData.left = rect.left;
+      }
+      
+      chrome.storage.sync.set({
+        floatingButtonPosition: positionData
+      }).catch(() => {}); // Ignore errors
+      
+      e.preventDefault();
+    }
+
+    // Mouse events
+    button.addEventListener('mousedown', startDrag);
+    document.addEventListener('mousemove', drag);
+    document.addEventListener('mouseup', endDrag);
+
+    // Touch events for mobile support
+    button.addEventListener('touchstart', startDrag, { passive: false });
+    document.addEventListener('touchmove', drag, { passive: false });
+    document.addEventListener('touchend', endDrag, { passive: false });
+
+    // Click handler for translation - 点击切换翻译/恢复状态
+    button.addEventListener('click', async (e) => {
+      if (isDragging) return; // Don't translate if we were dragging
+      
+      e.stopPropagation();
+      e.preventDefault();
+      
+      console.log('FloatingButton: Click detected, current enabled state:', enabled);
+      
+      try {
+        // Check if Translator API is available first
+        if (!isTranslatorAPIAvailable()) {
+          showOverlay('此页面不支持翻译功能（需要 Chrome 138+ 且安全上下文）');
+          setTimeout(hideOverlay, 3000);
+          return;
+        }
+        
+        // 切换翻译状态：如果已翻译则恢复，如果未翻译则翻译
+        if (enabled) {
+          // 当前已翻译，点击恢复
+          console.log('FloatingButton: Page is translated, calling restorePage()');
+          restorePage(); // restorePage函数内部已经处理了按钮状态更新
+        } else {
+          // 当前未翻译，点击翻译
+          console.log('FloatingButton: Page is not translated, calling translateTextNodes()');
+          // Get current target language from storage or use default
+          let targetLang = 'zh-Hans';
+          try {
+            const result = await chrome.storage.sync.get(['autoTranslateTargetLang']);
+            if (result.autoTranslateTargetLang) {
+              targetLang = result.autoTranslateTargetLang;
+            }
+          } catch {}
+          
+          await translateTextNodes(targetLang); // translateTextNodes函数内部已经处理了按钮状态更新
+        }
+        console.log('FloatingButton: Click processing completed, new enabled state:', enabled);
+      } catch (error) {
+        console.warn('Floating button translation failed:', error);
+        showOverlay('翻译失败：' + (error?.message || error || ''));
+        setTimeout(hideOverlay, 2000);
+      }
+    });
+
+    console.log('createFloatingButton: Button created successfully, assigning to floatingButton variable');
+    floatingButton = button;
+    console.log('createFloatingButton: Returning button, ID:', button.id);
+    return button;
+  }
+
+  function showFloatingButton() {
+    console.log('showFloatingButton: Called with floatingButtonEnabled =', floatingButtonEnabled);
+    
+    if (!floatingButtonEnabled) {
+      console.log('showFloatingButton: Floating button disabled, returning');
+      return;
+    }
+    
+    if (!document.body) {
+      console.warn('showFloatingButton: document.body not available');
+      return;
+    }
+    
+    console.log('showFloatingButton: Creating button...');
+    const button = createFloatingButton();
+    
+    if (!button) {
+      console.error('showFloatingButton: Failed to create button');
+      return;
+    }
+    
+    if (button.parentNode) {
+      console.log('showFloatingButton: Button already in DOM, skipping');
+      return;
+    }
+    
+    console.log('showFloatingButton: Adding button to DOM...');
+    
+    // Restore saved position
+    chrome.storage.sync.get(['floatingButtonPosition']).then(result => {
+      if (result.floatingButtonPosition) {
+        const pos = result.floatingButtonPosition;
+        // Ensure position is still within viewport - 适配长方形按钮尺寸 (60x32)
+        const maxX = window.innerWidth - 60;
+        const maxY = window.innerHeight - 32;
+        
+        // 处理位置恢复，支持 left 和 right 属性
+        if (pos.right !== undefined) {
+          // 使用 right 属性
+          const x = Math.max(0, Math.min(pos.right, maxX));
+          console.log('showFloatingButton: Restoring position to right:', x);
+          button.style.right = x + 'px';
+          button.style.left = 'auto'; // 清除 left 属性
+        } else if (pos.left !== undefined) {
+          // 兼容旧的 left 属性
+          const x = Math.max(0, Math.min(pos.left, maxX));
+          console.log('showFloatingButton: Restoring position to left:', x);
+          button.style.left = x + 'px';
+          button.style.right = 'auto'; // 清除 right 属性
+        }
+        
+        const y = Math.max(0, Math.min(pos.top, maxY));
+        
+        // 根据保存的设置决定是否使用 translateY
+        if (pos.useTranslateY) {
+          button.style.top = '50%';
+          button.style.transform = 'translateY(-50%)';
+        } else {
+          button.style.top = y + 'px';
+          button.style.transform = 'none';
+        }
+      } else {
+        console.log('showFloatingButton: No saved position, using default (right center)');
+        // 默认位置：右侧中间
+        button.style.right = '20px';
+        button.style.left = 'auto';
+        button.style.top = '50%';
+        button.style.transform = 'translateY(-50%)';
+      }
+    }).catch(e => {
+      console.warn('showFloatingButton: Error restoring position:', e);
+      // 错误时使用默认位置
+      button.style.right = '20px';
+      button.style.left = 'auto';
+      button.style.top = '50%';
+      button.style.transform = 'translateY(-50%)';
+    });
+    
+    try {
+      document.body.appendChild(button);
+      console.log('showFloatingButton: Button added to DOM successfully');
+      
+      // 根据当前状态设置按钮文字和提示
+      if (enabled) {
+        button.innerHTML = '恢复';
+        button.title = '点击恢复原始网页';
+      } else {
+        button.innerHTML = '翻译';
+        button.title = '点击翻译当前网页';
+      }
+      
+      // 按钮直接显示，无动画效果
+      button.style.opacity = '1';
+      button.style.visibility = 'visible';
+      console.log('showFloatingButton: Button displayed directly without animation');
+    } catch (error) {
+      console.error('showFloatingButton: Error adding button to DOM:', error);
+    }
+  }
+
+  function hideFloatingButton() {
+    if (floatingButton && floatingButton.parentNode) {
+      floatingButton.style.transition = 'all 0.3s ease';
+      floatingButton.style.opacity = '0';
+      floatingButton.style.transform = 'scale(0.5)';
+      
+      setTimeout(() => {
+        if (floatingButton && floatingButton.parentNode) {
+          floatingButton.remove();
+        }
+      }, 300);
+    }
   }
 
   // Messaging
@@ -804,6 +1258,12 @@
             }
             showOverlay('切换完成');
             setTimeout(hideOverlay, 1000);
+            
+            // 更新漂浮按钮状态
+            if (floatingButton && floatingButtonEnabled) {
+              floatingButton.innerHTML = '恢复';
+              floatingButton.title = '点击恢复原始网页';
+            }
           }
           sendResponse({ ok: true, enabled, targetLang: currentTargetLang });
           return;
@@ -818,17 +1278,38 @@
           return;
         }
         if (msg && msg.type === 'TOGGLE_SELECTION_TRANSLATION') {
-          const enabled = !!msg.enabled;
-          selectionTranslateEnabled = enabled;
-          console.log(`Selection translation ${enabled ? 'enabled' : 'disabled'} via message.`);
+          const selectionEnabled = !!msg.enabled;
+          selectionTranslateEnabled = selectionEnabled;
+          console.log(`Selection translation ${selectionEnabled ? 'enabled' : 'disabled'} via message.`);
 
           // If disabled, hide any existing tooltip
-          if (!enabled) {
+          if (!selectionEnabled) {
             hideTranslationTooltip();
             lastTranslatedText = null;
           }
 
-          sendResponse({ ok: true, selectionTranslateEnabled: enabled });
+          sendResponse({ ok: true, selectionTranslateEnabled: selectionEnabled });
+          return;
+        }
+        if (msg && msg.type === 'TOGGLE_FLOATING_BUTTON') {
+          const toggleEnabled = !!msg.enabled;
+          floatingButtonEnabled = toggleEnabled;
+          console.log(`Floating button ${toggleEnabled ? 'enabled' : 'disabled'} via message.`);
+
+          if (toggleEnabled) {
+            showFloatingButton();
+          } else {
+            hideFloatingButton();
+          }
+
+          sendResponse({ ok: true, floatingButtonEnabled: toggleEnabled });
+          return;
+        }
+        if (msg && msg.type === 'FORCE_SHOW_FLOATING_BUTTON') {
+          console.log('Force showing floating button for debugging...');
+          floatingButtonEnabled = true;
+          showFloatingButton();
+          sendResponse({ ok: true, forced: true });
           return;
         }
       } catch (e) {
@@ -841,18 +1322,44 @@
     return true; // keep channel open for async
   });
 
-  // Initialize selection translation when script loads
+  // Initialize when script loads
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initSelectionTranslation);
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log('DOMContentLoaded: Initializing...');
+      setTimeout(() => {
+        initSelectionTranslation();
+        initFloatingButton();
+      }, 100); // Small delay to ensure everything is ready
+    });
   } else {
-    initSelectionTranslation();
+    console.log('Document already loaded, initializing immediately...');
+    setTimeout(() => {
+      initSelectionTranslation();
+      initFloatingButton();
+    }, 100); // Small delay to ensure everything is ready
   }
+  
+  // Additional safety check - force initialization after 1 second if needed
+  setTimeout(() => {
+    console.log('Safety check: Ensuring floating button is initialized...');
+    if (!floatingButton) {
+      console.log('Safety check: Floating button not created, forcing initialization...');
+      initFloatingButton();
+    } else if (floatingButtonEnabled && !floatingButton.parentNode) {
+      console.log('Safety check: Floating button enabled but not in DOM, showing...');
+      showFloatingButton();
+    }
+  }, 1000);
 
   // Cleanup when page unloads
   window.addEventListener('beforeunload', () => {
     cleanupSelectionTranslation();
+    hideFloatingButton();
     try { translator?.destroy?.(); } catch {}
     try { selectionTranslator?.destroy?.(); } catch {}
   });
 })();
+
+
+
 

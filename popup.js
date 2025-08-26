@@ -13,11 +13,15 @@ const copyBtn = document.getElementById("copyBtn");
 const speakBtn = document.getElementById("speakBtn");
 const autoToggle = document.getElementById("autoToggle");
 const selectionToggle = document.getElementById("selectionToggle");
+const floatingToggle = document.getElementById("floatingToggle");
 const autoToggleStatus = document.getElementById("autoToggleStatus");
 const selectionToggleStatus = document.getElementById("selectionToggleStatus");
+const floatingToggleStatus = document.getElementById("floatingToggleStatus");
+
 const manualPageBtn = document.getElementById("manualPageBtn");
 const restorePageBtn = document.getElementById("restorePageBtn");
 const feedbackBtn = document.getElementById("feedbackBtn");
+const emailFeedbackBtn = document.getElementById("emailFeedbackBtn");
 
 
 const downloadSection = document.getElementById("downloadSection");
@@ -490,9 +494,10 @@ swapBtn?.addEventListener("click", () => {
 // 初始化：加载设置并同步 UI
 (async () => {
   try {
-    const s = await chrome.storage.sync.get(['autoTranslateEnabled', 'selectionTranslateEnabled', 'autoTranslateTargetLang']);
+    const s = await chrome.storage.sync.get(['autoTranslateEnabled', 'selectionTranslateEnabled', 'floatingButtonEnabled', 'autoTranslateTargetLang']);
     const autoEnabled = !!s.autoTranslateEnabled;
     const selectionEnabled = !!s.selectionTranslateEnabled;
+    const floatingEnabled = !!s.floatingButtonEnabled;
 
     if (autoToggle) {
       autoToggle.checked = autoEnabled;
@@ -501,6 +506,10 @@ swapBtn?.addEventListener("click", () => {
     if (selectionToggle) {
       selectionToggle.checked = selectionEnabled;
       updateToggleStatus(selectionToggle, selectionToggleStatus, selectionEnabled);
+    }
+    if (floatingToggle) {
+      floatingToggle.checked = floatingEnabled;
+      updateToggleStatus(floatingToggle, floatingToggleStatus, floatingEnabled);
     }
     if (s.autoTranslateTargetLang) targetSelect.value = s.autoTranslateTargetLang;
   } catch {}
@@ -524,6 +533,7 @@ autoToggle?.addEventListener('change', async (e) => {
 });
 
 // 选中翻译开关：持久化并通知content script
+
 selectionToggle?.addEventListener('change', async (e) => {
   const enabled = !!e.target.checked;
   await chrome.storage.sync.set({ selectionTranslateEnabled: enabled });
@@ -542,6 +552,29 @@ selectionToggle?.addEventListener('change', async (e) => {
   } catch (e) {
     // 忽略错误（可能是页面不支持或其他原因）
     console.warn('Failed to notify content script about selection translation toggle:', e);
+  }
+});
+
+// 漂浮翻译按钮开关：持久化并通知content script
+floatingToggle?.addEventListener('change', async (e) => {
+  const enabled = !!e.target.checked;
+  await chrome.storage.sync.set({ floatingButtonEnabled: enabled });
+  updateToggleStatus(floatingToggle, floatingToggleStatus, enabled);
+  setStatus(enabled ? '已开启：漂浮翻译按钮' : '已关闭：漂浮翻译按钮', enabled ? 'ok' : '');
+
+  // 通知当前标签页的content script更新漂浮按钮状态
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab?.id) {
+      await chrome.tabs.sendMessage(tab.id, {
+        type: 'TOGGLE_FLOATING_BUTTON',
+        enabled: enabled,
+        targetLang: targetSelect.value
+      });
+    }
+  } catch (e) {
+    // 忽略错误（可能是页面不支持或其他原因）
+    console.warn('Failed to notify content script about floating button toggle:', e);
   }
 });
 
@@ -600,7 +633,65 @@ targetSelect?.addEventListener('change', async () => {
 feedbackBtn?.addEventListener('click', () => {
   const feedbackUrl = 'https://github.com/AnYi-0/Translator/issues/';
   chrome.tabs.create({ url: feedbackUrl });
-  setStatus('已打开反馈页面，感谢您的反馈！', 'ok');
+  setStatus('已打开GitHub反馈页面，感谢您的反馈！', 'ok');
+});
+
+// 邮箱反馈按钮：打开邮箱客户端
+emailFeedbackBtn?.addEventListener('click', () => {
+  const email = 'translator2025@163.com';
+  const subject = encodeURIComponent('Translator插件反馈 - ');
+  const body = encodeURIComponent(`您好！
+
+请在下方描述您遇到的问题或建议：
+
+问题描述：
+
+
+重现步骤：
+1. 
+2. 
+3. 
+
+期望结果：
+
+
+实际结果：
+
+
+浏览器信息：
+- Chrome版本：
+- 插件版本：1.4.0
+- 操作系统：
+
+感谢您的反馈！`);
+  
+  const mailtoUrl = `mailto:${email}?subject=${subject}&body=${body}`;
+  
+  // 尝试直接打开邮箱客户端
+  try {
+    chrome.tabs.create({ url: mailtoUrl });
+    setStatus('已打开邮箱客户端，感谢您的反馈！', 'ok');
+  } catch (e) {
+    // 如果直接打开失败，复制邮箱地址到剪贴板
+    navigator.clipboard.writeText('translator2025@163.com').then(() => {
+      setStatus('邮箱地址已复制到剪贴板：translator2025@163.com', 'ok');
+    }).catch(() => {
+      setStatus('请手动发送邮件至：translator2025@163.com', 'warn');
+    });
+  }
+});
+
+// Debug: Double-click feedback button to force show floating button
+feedbackBtn?.addEventListener('dblclick', async () => {
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab?.id) {
+      await chrome.tabs.sendMessage(tab.id, { type: 'FORCE_SHOW_FLOATING_BUTTON' });
+      setStatus('已强制显示漂浮按钮（调试功能）', 'ok');
+    }
+  } catch (e) {
+    setStatus('强制显示失败：' + String(e?.message || e || ''), 'err');
+  }
 });
 
 // Optional: update availability hint when selects change

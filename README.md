@@ -5,14 +5,14 @@
 </p>
 
 
-一个基于 Chrome 138+ 新增的本地 Translator API 和 Language Detector API 的轻量级翻译扩展，支持自动检测网页语言、自动翻译网页、离线翻译（首次可能需下载模型）、快速出结果。
+一个基于 Chrome 138+ 新增的本地 Translator API 和 Language Detector API 的离线轻量级翻译扩展，支持自动检测网页语言、自动翻译网页、离线翻译（首次可能需下载模型）、快速出结果。
 
 ## 下载地址
 
 [![Chrome 商店](https://img.shields.io/chrome-web-store/v/hlckjpmehcjcldpaamdcegocapmelegc?style=for-the-badge&logo=googlechrome&logoColor=white&label=Chrome%20商店&color=4285F4)](https://chromewebstore.google.com/detail/hlckjpmehcjcldpaamdcegocapmelegc)
 [![GitHub release](https://img.shields.io/github/v/release/AnYi-0/Translator?style=for-the-badge&logo=github&label=GitHub%20Release)](https://github.com/AnYi-0/Translator/releases/latest)
 
-- **[Chrome 网上应用店](https://chromewebstore.google.com/detail/hlckjpmehcjcldpaamdcegocapmelegc)** (推荐)
+- **[Chrome 网上应用商店](https://chromewebstore.google.com/detail/hlckjpmehcjcldpaamdcegocapmelegc)** (推荐)
 - **[GitHub Releases](https://github.com/AnYi-0/Translator/releases/)** (下载 `.zip` 文件手动安装)
 
 
@@ -27,7 +27,7 @@
 - 一比一还原Google原生网页翻译
 - 选中任意文本即可自动翻译
 
-- ✨ **增加翻译开关**：增加翻译开关（v1.3.0新增）
+- ✨ **增加漂浮翻译开关**：增加漂浮翻译开关（v1.4.0新增）
 
 ## 运行要求
 - Chrome 版本：138+（支持 Translator 与 LanguageDetector）
@@ -38,11 +38,9 @@
 3. 点击“加载已解压的扩展程序”，选择本项目文件夹
 4. 点击工具栏扩展图标，打开弹窗使用
 
-
 ## 插件截图
 
 ![插件截图](/image/show.png)
-![插件截图](/image/show2.png)
 
 ![插件截图](/image/select.png)
 

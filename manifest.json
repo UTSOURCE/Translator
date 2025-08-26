@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Translator快速翻译",
-  "version": "1.3.0",
-  "description": "使用浏览器内置的 Translator 与 Language Detector API 进行本地翻译，准确度高，响应速度快，支持自动检测与快速翻译。新增：选中文本自动翻译、自动/手动网页翻译。",
+  "version": "1.4.0",
+  "description": "使用浏览器内置的 Translator 与 Language Detector API 进行本地离线翻译，准确度高，响应速度快，支持自动检测与快速翻译。新增：选中文本自动翻译、网页漂浮翻译按钮。",
   "action": {
     "default_title": "Translator",
     "default_popup": "popup.html"

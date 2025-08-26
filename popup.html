@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>翻译器</title>
+    <title>Translator快速翻译</title>
     <style>
       :root {
         --bg: #f6f8fb;
@@ -263,6 +263,12 @@
     <div class="card">
       <h1>Translator快速翻译</h1>
 
+      <!-- 页面翻译按钮 -->
+      <div id="pageActions" style="display:flex;gap:8px;margin-bottom:14px;">
+        <button id="manualPageBtn" class="btn" style="flex:1;padding:8px 12px;font-size:12px;background:#f1f5f9;border:1px solid #e2e8f0;color:#475569;">翻译当前网页</button>
+        <button id="restorePageBtn" class="btn" style="flex:1;padding:8px 12px;font-size:12px;background:#f1f5f9;border:1px solid #e2e8f0;color:#475569;">恢复原状</button>
+      </div>
+
       <div class="row">
         <div>
           <label for="sourceLang">来源语言</label>
@@ -393,27 +399,46 @@
               <span class="toggle-slider" style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;border-radius:24px;transition:0.3s;"></span>
             </label>
           </div>
+
+          <!-- 漂浮翻译按钮开关 -->
+          <div class="switch-item" style="display:flex;align-items:center;justify-content:space-between;">
+            <div style="display:flex;flex-direction:column;">
+              <label class="small" style="color:var(--text);cursor:pointer;font-weight:500;" for="floatingToggle">
+                漂浮翻译按钮
+              </label>
+              <span id="floatingToggleStatus" class="small" style="color:var(--muted);font-size:10px;margin-top:2px;">已关闭</span>
+            </div>
+            <label class="toggle-switch" style="position:relative;display:inline-block;width:44px;height:24px;">
+              <input id="floatingToggle" type="checkbox" style="opacity:0;width:0;height:0;">
+              <span class="toggle-slider" style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;border-radius:24px;transition:0.3s;"></span>
+            </label>
+          </div>
         </div>
 
-        <!-- 页面翻译按钮 -->
-        <div style="display:flex;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid rgba(226,232,240,0.5);">
-          <button id="manualPageBtn" class="btn" style="flex:1;padding:8px 12px;font-size:12px;background:#f1f5f9;border:1px solid #e2e8f0;color:#475569;">翻译当前网页</button>
-          <button id="restorePageBtn" class="btn" style="flex:1;padding:8px 12px;font-size:12px;background:#f1f5f9;border:1px solid #e2e8f0;color:#475569;">恢复原状</button>
-        </div>
+
       </div>
 
       <!-- 反馈区域 -->
       <div style="margin-top:12px;padding:12px;border:1px solid var(--border);border-radius:10px;background:linear-gradient(135deg, #fefefe 0%, #f8fafc 100%);">
-        <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
           <div style="display:flex;flex-direction:column;">
             <span class="small" style="color:var(--text);font-weight:500;">遇到问题？</span>
-            <span class="small" style="color:var(--muted);font-size:10px;margin-top:2px;">点击反馈问题或建议</span>
+            <span class="small" style="color:var(--muted);font-size:10px;margin-top:2px;">选择反馈方式</span>
           </div>
-          <button id="feedbackBtn" class="btn" style="width:auto;padding:6px 12px;font-size:12px;background:linear-gradient(135deg, #4a90e2, #346fc7);color:#fff;border:none;display:flex;align-items:center;gap:4px;" title="反馈问题或建议">
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button id="feedbackBtn" class="btn" style="flex:1;padding:6px 10px;font-size:11px;background:linear-gradient(135deg, #4a90e2, #346fc7);color:#fff;border:none;display:flex;align-items:center;justify-content:center;gap:4px;" title="GitHub Issues反馈">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+              <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
             </svg>
-            反馈
+            GitHub
+          </button>
+          <button id="emailFeedbackBtn" class="btn" style="flex:1;padding:6px 10px;font-size:11px;background:linear-gradient(135deg, #10b981, #059669);color:#fff;border:none;display:flex;align-items:center;justify-content:center;gap:4px;" title="邮箱反馈">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+              <polyline points="22,6 12,13 2,6"></polyline>
+            </svg>
+            邮箱
           </button>
         </div>
       </div>
