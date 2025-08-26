@@ -40,7 +40,7 @@
 
 ## 插件截图
 
-![插件截图](/image/show.png)
+![插件截图](/image/translator.png)
 
 ![插件截图](/image/select.png)
 
