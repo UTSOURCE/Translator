@@ -4,6 +4,12 @@
   <img src="icon.png" alt="Translator Extension Icon" width="128" />
 </p>
 
+<p align="center">
+  <a href="https://translation.run/">🌐 官方网站</a> |
+  <a href="https://chromewebstore.google.com/detail/hlckjpmehcjcldpaamdcegocapmelegc">🛍️ Chrome 商店</a> |
+  <a href="https://github.com/AnYi-0/Translator">💻 源代码</a>
+</p>
+
 
 一个基于 Chrome 138+ 新增的本地 Translator API 和 Language Detector API 的离线轻量级翻译扩展，支持自动检测网页语言、自动翻译网页、离线翻译（首次可能需下载模型）、快速出结果。
 
@@ -14,6 +20,14 @@
 
 - **[Chrome 网上应用商店](https://chromewebstore.google.com/detail/hlckjpmehcjcldpaamdcegocapmelegc)** (推荐)
 - **[GitHub Releases](https://github.com/AnYi-0/Translator/releases/)** (下载 `.zip` 文件手动安装)
+
+## 官方网站
+
+访问 **[https://translation.run/](https://translation.run/)** 了解更多信息，包括：
+- 📖 详细使用教程
+- 🚀 最新功能介绍  
+- 💬 用户反馈与支持
+- 📥 快速下载链接
 
 
 ## 特性
