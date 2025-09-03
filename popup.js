@@ -23,6 +23,14 @@ const restorePageBtn = document.getElementById("restorePageBtn");
 const feedbackBtn = document.getElementById("feedbackBtn");
 const emailFeedbackBtn = document.getElementById("emailFeedbackBtn");
 
+// 白名单相关元素
+const whitelistInput = document.getElementById("whitelistInput");
+const addWhitelistBtn = document.getElementById("addWhitelistBtn");
+const addCurrentPageBtn = document.getElementById("addCurrentPageBtn");
+const whitelistContainer = document.getElementById("whitelistContainer");
+const whitelistCount = document.getElementById("whitelistCount");
+const emptyWhitelist = document.getElementById("emptyWhitelist");
+
 
 const downloadSection = document.getElementById("downloadSection");
 function updateCharCount() {
@@ -148,6 +156,192 @@ function populateLangSelects() {
 function setStatus(msg, cls = "") {
   statusEl.textContent = msg;
   statusEl.className = `hint small ${cls}`.trim();
+}
+
+// 白名单管理函数
+let whitelistPatterns = [];
+
+// 加载白名单
+async function loadWhitelist() {
+  try {
+    const result = await chrome.storage.sync.get(['whitelistPatterns']);
+    whitelistPatterns = result.whitelistPatterns || [];
+    updateWhitelistDisplay();
+  } catch (e) {
+    console.warn('加载白名单失败:', e);
+    whitelistPatterns = [];
+  }
+}
+
+// 保存白名单
+async function saveWhitelist() {
+  try {
+    await chrome.storage.sync.set({ whitelistPatterns });
+  } catch (e) {
+    console.warn('保存白名单失败:', e);
+    setStatus('保存白名单失败', 'err');
+  }
+}
+
+// 验证输入的网址或路径
+function validateInput(input) {
+  // 基本的输入验证，确保不是空字符串且不包含危险字符
+  if (!input || input.trim().length === 0) return false;
+  
+  const trimmed = input.trim();
+  // 禁止一些危险字符，但允许通配符 *
+  const dangerousChars = ['<', '>', '"', "'", '&'];
+  if (dangerousChars.some(char => trimmed.includes(char))) {
+    return false;
+  }
+  
+  // 验证通配符语法
+  if (trimmed.includes('*')) {
+    // 检查通配符是否合法
+    try {
+      const regexPattern = trimmed
+        .replace(/\./g, '\\.')
+        .replace(/\*/g, '.*');
+      new RegExp('^' + regexPattern + '$');
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+  
+  return true;
+}
+
+// 添加白名单项
+async function addWhitelistItem(pattern) {
+  if (!pattern || !pattern.trim()) {
+    setStatus('请输入有效的网址或路径', 'warn');
+    return;
+  }
+  
+  const trimmedPattern = pattern.trim();
+  
+  // 检查是否已存在
+  if (whitelistPatterns.includes(trimmedPattern)) {
+    setStatus('该网址已存在于白名单中', 'warn');
+    return;
+  }
+  
+  // 验证输入
+  if (!validateInput(trimmedPattern)) {
+    setStatus('输入包含无效字符', 'err');
+    return;
+  }
+  
+  whitelistPatterns.push(trimmedPattern);
+  await saveWhitelist();
+  updateWhitelistDisplay();
+  whitelistInput.value = '';
+  setStatus('已添加到白名单', 'ok');
+}
+
+// 删除白名单项
+async function removeWhitelistItem(pattern) {
+  const index = whitelistPatterns.indexOf(pattern);
+  if (index > -1) {
+    whitelistPatterns.splice(index, 1);
+    await saveWhitelist();
+    updateWhitelistDisplay();
+    setStatus('已从白名单中删除', 'ok');
+  }
+}
+
+// 更新白名单显示
+function updateWhitelistDisplay() {
+  whitelistCount.textContent = whitelistPatterns.length;
+  
+  if (whitelistPatterns.length === 0) {
+    whitelistContainer.innerHTML = '<div id="emptyWhitelist" class="small" style="padding:16px;text-align:center;color:var(--muted);font-style:italic;">暂无白名单网址</div>';
+    return;
+  }
+  
+  const listHtml = whitelistPatterns.map((pattern, index) => `
+    <div class="whitelist-item" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;${index < whitelistPatterns.length - 1 ? 'border-bottom:1px solid #f0f0f0;' : ''}background:#ffffff;transition:background 0.2s ease;" onmouseover="this.style.background='#f8f9fa';" onmouseout="this.style.background='#ffffff';">
+      <div style="flex:1;min-width:0;margin-right:8px;">
+        <div class="small" style="color:#1d1d1f;font-family:SF Mono,-apple-system-monospace,Monaco,monospace;font-size:11px;line-height:1.4;word-break:break-all;">${escapeHtml(pattern)}</div>
+      </div>
+      <button class="remove-whitelist-btn" data-pattern="${escapeHtml(pattern)}" style="width:20px;height:20px;padding:0;background:#ff3b30;border:none;border-radius:10px;cursor:pointer;transition:all 0.2s ease;display:flex;align-items:center;justify-content:center;flex-shrink:0;" onmouseover="this.style.background='#d70015';this.style.transform='scale(1.1)';" onmouseout="this.style.background='#ff3b30';this.style.transform='scale(1)';" title="删除">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+  `).join('');
+  
+  whitelistContainer.innerHTML = listHtml;
+  
+  // 绑定删除按钮事件
+  whitelistContainer.querySelectorAll('.remove-whitelist-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const pattern = btn.getAttribute('data-pattern');
+      removeWhitelistItem(pattern);
+    });
+  });
+}
+
+// 添加当前网页到白名单
+async function addCurrentPageToWhitelist() {
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab || !tab.url) {
+      setStatus('无法获取当前网页信息', 'err');
+      return;
+    }
+    
+    const url = tab.url;
+    
+    // 检查是否为支持的协议
+    if (!/^https?:/.test(url)) {
+      setStatus('仅支持 HTTP/HTTPS 网页', 'warn');
+      return;
+    }
+    
+    // 提取域名和路径
+    const urlObj = new URL(url);
+    const hostname = urlObj.hostname;
+    const pathname = urlObj.pathname;
+    
+    // 生成匹配模式
+    let suggestionPattern;
+    if (pathname === '/' || pathname === '') {
+      // 如果是首页，使用精确域名匹配
+      suggestionPattern = hostname;
+    } else {
+      // 如果有路径，使用域名+路径匹配
+      suggestionPattern = hostname + pathname;
+    }
+    
+    // 检查是否已存在
+    if (whitelistPatterns.includes(suggestionPattern)) {
+      setStatus(`该模式已在白名单中：${suggestionPattern}`, 'warn');
+      return;
+    }
+    
+    // 添加到白名单
+    whitelistPatterns.push(suggestionPattern);
+    await saveWhitelist();
+    updateWhitelistDisplay();
+    
+    setStatus(`已添加到白名单：${suggestionPattern}`, 'ok');
+    
+  } catch (e) {
+    console.error('添加当前网页到白名单失败:', e);
+    setStatus('添加失败：' + String(e?.message || e || ''), 'err');
+  }
+}
+
+// HTML转义函数
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
 }
 
 // 更新开关状态文本
@@ -512,6 +706,9 @@ swapBtn?.addEventListener("click", () => {
       updateToggleStatus(floatingToggle, floatingToggleStatus, floatingEnabled);
     }
     if (s.autoTranslateTargetLang) targetSelect.value = s.autoTranslateTargetLang;
+    
+    // 加载白名单
+    await loadWhitelist();
   } catch {}
 
   try {
@@ -523,6 +720,35 @@ swapBtn?.addEventListener("click", () => {
     }
   } catch {}
 })();
+
+// 白名单交互事件
+addWhitelistBtn?.addEventListener('click', () => {
+  const pattern = whitelistInput.value.trim();
+  addWhitelistItem(pattern);
+});
+
+// 添加当前网页按钮事件
+addCurrentPageBtn?.addEventListener('click', addCurrentPageToWhitelist);
+
+// 白名单输入框回车键事件
+whitelistInput?.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') {
+    const pattern = whitelistInput.value.trim();
+    addWhitelistItem(pattern);
+  }
+});
+
+// 白名单输入框实时验证
+whitelistInput?.addEventListener('input', () => {
+  const pattern = whitelistInput.value.trim();
+  if (pattern && !validateInput(pattern)) {
+    whitelistInput.style.borderColor = '#ff3b30';
+    whitelistInput.title = '输入包含无效字符';
+  } else {
+    whitelistInput.style.borderColor = '#d1d1d6';
+    whitelistInput.title = '';
+  }
+});
 
 // 自动翻译开关：持久化并提示
 autoToggle?.addEventListener('change', async (e) => {
@@ -692,6 +918,65 @@ feedbackBtn?.addEventListener('dblclick', async () => {
   } catch (e) {
     setStatus('强制显示失败：' + String(e?.message || e || ''), 'err');
   }
+});
+
+// 白名单测试函数（调试用）
+function testWhitelistMatching() {
+  const testUrls = [
+    'https://google.com',
+    'https://www.google.com',
+    'https://translate.google.com',
+    'https://google.com/search',
+    'https://www.google.com/admin/index',
+    'https://github.com',
+    'https://www.github.com',
+    'https://api.github.com'
+  ];
+  
+  const testPatterns = [
+    'google.com',          // 精确匹配 google.com
+    '*.google.com',        // 匹配所有 google.com 子域名
+    'google.com/search',   // 精确匹配特定路径
+    'github.com'           // 精确匹配 github.com
+  ];
+  
+  console.log('白名单精确匹配测试结果：');
+  
+  testPatterns.forEach(pattern => {
+    console.log(`\n匹配模式: ${pattern}`);
+    testUrls.forEach(url => {
+      try {
+        const urlObj = new URL(url);
+        const hostname = urlObj.hostname;
+        const pathname = urlObj.pathname;
+        const fullPath = hostname + pathname;
+        
+        let matches = false;
+        
+        if (pattern.includes('*')) {
+          // 通配符匹配
+          const regexPattern = pattern
+            .replace(/\./g, '\\.')
+            .replace(/\*/g, '.*');
+          const regex = new RegExp('^' + regexPattern + '$');
+          matches = regex.test(hostname) || regex.test(fullPath);
+        } else {
+          // 精确匹配
+          matches = hostname === pattern || fullPath === pattern;
+        }
+        
+        console.log(`  ${url}: ${matches ? '✓ 匹配' : '✗ 不匹配'}`);
+      } catch (e) {
+        console.log(`  ${url}: 错误 - ${e.message}`);
+      }
+    });
+  });
+}
+
+// 双击邮箱反馈按钮进行白名单测试
+emailFeedbackBtn?.addEventListener('dblclick', () => {
+  testWhitelistMatching();
+  setStatus('白名单匹配测试完成，请查看控制台', 'ok');
 });
 
 // Optional: update availability hint when selects change
